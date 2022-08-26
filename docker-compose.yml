@@ -1,0 +1,44 @@
+version: '2'
+services:
+  database:
+    image: mysql:5.7
+    ports:
+        - "3306:3306"
+    command: --init-file /data/application/init.sql
+    volumes:
+        - ./init.sql:/data/application/init.sql
+    environment:
+        MYSQL_ROOT_USER: root
+        MYSQL_ROOT_PASSWORD: secret
+        MYSQL_DATABASE: homestead
+        MYSQL_USER: root
+        MYSQL_PASSWORD: secret
+  
+  mainapi:
+    build: ./main_api/
+    ports:
+      - "5000:5000"
+    volumes:
+      - main_api:/var/www/main_api
+
+  cart:
+    build: ./cart/
+    ports:
+      - "3000:3000"
+    volumes:
+      - cart:/var/www/cart
+  
+  products:
+    build: ./products/
+    ports:
+      - "5000:50051"
+    volumes:
+      - products:/var/www/products
+  
+  recomment:
+    build: ./recomment/
+    ports:
+      - "6000:50051"
+    volumes:
+      - recomment:/var/www/recomment
+  
