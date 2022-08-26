@@ -1,22 +1,34 @@
 # flask imports
 from flask import Flask, request, jsonify, make_response
-from flask_sqlalchemy import SQLAlchemy
-import uuid # for public id
+import uuid
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+
 # imports for PyJWT authentication
 import jwt
 from datetime import datetime, timedelta
 from functools import wraps
-from model import User
-# creates Flask object
+from settings import *
+
 app = Flask(__name__)
 # configuration
-app.config['SECRET_KEY'] = 'xxxx'
+# app.config['SECRET_KEY'] = 'xxxx'
 # database name
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///Database.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
+app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql://{DATABASE["user"]}:{DATABASE["password"]}@{DATABASE["host"]}/{DATABASE["db"]}'
+# app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
+
 # creates SQLALCHEMY object
 db = SQLAlchemy(app)
+
+
+# Database ORMs
+class User(db.Model):
+	id = db.Column(db.Integer, primary_key = True)
+	public_id = db.Column(db.String(50), unique = True)
+	name = db.Column(db.String(100))
+	email = db.Column(db.String(70), unique = True)
+	password = db.Column(db.String(80))
 
 
 
@@ -141,4 +153,4 @@ if __name__ == "__main__":
 	# setting debug to True enables hot reload
 	# and also provides a debugger shell
 	# if you hit an error while running the server
-	app.run(debug = True)
+	app.run(debug = True, host='0.0.0.0', port=5000)

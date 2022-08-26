@@ -1,44 +1,80 @@
-version: '2'
+version: '3.3'
 services:
   database:
     image: mysql:5.7
-    ports:
-        - "3306:3306"
-    command: --init-file /data/application/init.sql
-    volumes:
-        - ./init.sql:/data/application/init.sql
+    container_name: mysql
+    restart: always
     environment:
-        MYSQL_ROOT_USER: root
-        MYSQL_ROOT_PASSWORD: secret
-        MYSQL_DATABASE: homestead
-        MYSQL_USER: root
-        MYSQL_PASSWORD: secret
+      MYSQL_DATABASE: 'microservice'   
+      MYSQL_USER: 'user'
+      MYSQL_PASSWORD: 'password'      
+      MYSQL_ROOT_PASSWORD: 'password'
+    ports:
+      - '3306:3306'
+    expose:
+      - '3306'
+    volumes:
+      - './.mysql-data/db:/var/lib/mysql'
+    networks:
+      - microservice_demo
+  
+  redis:
+    image: redis:6.2-alpine
+    container_name: redis
+    restart: always
+    ports:
+      - '6379:6379'
+    command: redis-server --save 20 1 --loglevel warning --requirepass eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
+    volumes: 
+      - .:/data
+    networks:
+      - microservice_demo
+    tty: true
   
   mainapi:
+    container_name: mainapi
     build: ./main_api/
     ports:
       - "5000:5000"
     volumes:
-      - main_api:/var/www/main_api
+      - ./main_api:/var/www/main_api
+    networks:
+      - microservice_demo
+    tty: true
 
   cart:
-    build: ./cart/
+    container_name: cart
+    build: ./cart
     ports:
       - "3000:3000"
     volumes:
-      - cart:/var/www/cart
+      - ./cart:/var/www/cart
+    networks:
+      - microservice_demo
+    tty: true
+
+  # products:
+  #   container_name: products
+  #   build: ./products/
+  #   ports:
+  #     - "6001:50051"
+  #   volumes:
+  #     - ./products:/var/www/products
+  #   networks:
+  #     - microservice_demo
+  #   tty: true
   
-  products:
-    build: ./products/
-    ports:
-      - "5000:50051"
-    volumes:
-      - products:/var/www/products
-  
-  recomment:
-    build: ./recomment/
-    ports:
-      - "6000:50051"
-    volumes:
-      - recomment:/var/www/recomment
-  
+  # recomment:
+  #   container_name: recomment
+  #   build: ./recomment
+  #   ports:
+  #     - "6000:50051"
+  #   volumes:
+  #     - ./recomment:/var/www/recomment
+  #   networks:
+  #     - microservice_demo
+  #   tty: true
+
+networks:
+  microservice_demo:
+    external: true
