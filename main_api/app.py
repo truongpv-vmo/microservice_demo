@@ -1,35 +1,68 @@
 # flask imports
-from flask import Flask, request, jsonify, make_response
 import uuid
-from werkzeug.security import generate_password_hash, check_password_hash
-from flask import Flask
+import random
+import string
+import hashlib
+from flask import Flask, request, jsonify, make_response
 from flask_sqlalchemy import SQLAlchemy
+from werkzeug.security import generate_password_hash, check_password_hash
 
 # imports for PyJWT authentication
-import jwt
 from datetime import datetime, timedelta
 from functools import wraps
-from settings import *
+from settings import DATABASE
+
 
 app = Flask(__name__)
-# configuration
-# app.config['SECRET_KEY'] = 'xxxx'
+# ---------------- configuration ----------------
 # database name
 app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql://{DATABASE["user"]}:{DATABASE["password"]}@{DATABASE["host"]}/{DATABASE["db"]}'
-# app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 
 # creates SQLALCHEMY object
 db = SQLAlchemy(app)
 
 
-# Database ORMs
+# Database
 class User(db.Model):
-	id = db.Column(db.Integer, primary_key = True)
-	public_id = db.Column(db.String(50), unique = True)
+	id = db.Column(db.Integer, primary_key=True)
+	public_id = db.Column(db.String(50), unique=True)
 	name = db.Column(db.String(100))
-	email = db.Column(db.String(70), unique = True)
-	password = db.Column(db.String(80))
+	email = db.Column(db.String(70), unique=True)
+	password = db.Column(db.String(200))
 
+
+class Token(db.Model):
+	id = db.Column(db.Integer, primary_key=True)
+	token = db.Column(db.String(200), unique=True)
+	user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+	exp = db.Column(
+			db.DateTime,
+			nullable=False,
+			default=datetime.utcnow() + timedelta(minutes=120)
+		)
+
+
+class Price_unit(db.Model):
+	id = db.Column(db.Integer, primary_key=True)
+	currencyCode = db.Column(db.String(100), unique=True)
+
+
+class Products(db.Model):
+	id = db.Column(db.Integer, primary_key=True)
+	name = db.Column(db.String(200), unique=True)
+	description = db.Column(db.Text)
+	picture = db.Column(db.Text)
+	total = db.Column(db.Integer, primary_key=True)
+	unit_id = db.Column(db.Integer, db.ForeignKey('price_unit.id'))
+	categories = db.Column(db.Text)
+
+
+def generate_token(user_id, email):
+	allowed_chars = ''.join((string.ascii_letters, string.digits))
+	ramdom_char = ''.join(random.choice(allowed_chars) for _ in range(32))
+	pre_token = str(user_id) + email + ramdom_char
+	token = hashlib.md5(pre_token.encode("utf")).hexdigest()
+	return token
 
 
 # decorator for verifying the JWT
@@ -42,47 +75,23 @@ def token_required(f):
 			token = request.headers['x-access-token']
 		# return 401 if token is not passed
 		if not token:
-			return jsonify({'message' : 'Token is missing !!'}), 401
+			return jsonify({'message': 'Token is missing !!'}), 401
 
-		try:
-			# decoding the payload to fetch the stored details
-			data = jwt.decode(token, app.config['SECRET_KEY'])
-			current_user = User.query\
-				.filter_by(public_id = data['public_id'])\
-				.first()
-		except:
+		current_user = User.query.filter_by(
+				id=Token.query.filter_by(token=token).first().user_id
+			).first()
+		if not current_user:
 			return jsonify({
-				'message' : 'Token is invalid !!'
+				'message': 'Token is invalid !!'
 			}), 401
 		# returns the current logged in users contex to the routes
 		return f(current_user, *args, **kwargs)
 
 	return decorated
 
-# # User Database Route
-# # this route sends back list of users
-# @app.route('/user', methods =['GET'])
-# @token_required
-# def get_all_users(current_user):
-# 	# querying the database
-# 	# for all the entries in it
-# 	users = User.query.all()
-# 	# converting the query objects
-# 	# to list of jsons
-# 	output = []
-# 	for user in users:
-# 		# appending the user data json
-# 		# to the response list
-# 		output.append({
-# 			'public_id': user.public_id,
-# 			'name' : user.name,
-# 			'email' : user.email
-# 		})
-
-# 	return jsonify({'users': output})
 
 # route for logging user in
-@app.route('/login', methods =['POST'])
+@app.route('/login/', methods=['POST'])
 def login():
 	# creates dictionary of form data
 	auth = request.form
@@ -92,7 +101,7 @@ def login():
 		return make_response(
 			'Could not verify',
 			401,
-			{'WWW-Authenticate' : 'Basic realm ="Login required !!"'}
+			{'WWW-Authenticate': 'Basic realm ="Login required !!"'}
 		)
 
 	user = User.query.filter_by(email = auth.get('email')).first()
@@ -102,24 +111,22 @@ def login():
 		return make_response(
 			'Could not verify',
 			401,
-			{'WWW-Authenticate' : 'Basic realm ="User does not exist !!"'}
+			{'WWW-Authenticate': 'Basic realm ="User does not exist !!"'}
 		)
 
 	if check_password_hash(user.password, auth.get('password')):
 		# generates the JWT Token
-		token = jwt.encode({
-			'public_id': user.public_id,
-			'exp' : datetime.utcnow() + timedelta(minutes = 30)
-		}, app.config['SECRET_KEY'])
-
-		return make_response(jsonify({'token' : token.decode('UTF-8')}), 201)
+		token = generate_token(user.id, user.email)
+		db.session.add(Token(token=token, user_id=user.id))
+		db.session.commit()
+		return make_response(jsonify({'token': token}), 201)
 	#password is wrong
 	return make_response( 
-        jsonify({'message' : 'password is wrong'}), 401)
+        jsonify({'message': 'password is wrong'}), 401)
 
 
 # signup route
-@app.route('/signup', methods =['POST'])
+@app.route('/signup/', methods=['POST'])
 def signup():
 	# creates a dictionary of the form data
 	data = request.form
@@ -145,12 +152,28 @@ def signup():
 		db.session.commit()
 
 		return make_response('Successfully registered.', 201)
-	else:
-		# returns 202 if user already exists
-		return make_response('User already exists. Please Log in.', 202)
+	# returns 202 if user already exists
+	return make_response('User already exists. Please Log in.', 202)
+
+
+@app.route('/products/', methods=['GET'])
+@token_required
+def get_products(current_user):
+	#TODO
+	return make_response(jsonify({'products': 'passs'}), 200)
+
+
+@app.route('/recommendations/', methods=['GET'])
+@token_required
+def get_recommendations(current_user):
+	#TODO
+	return make_response(jsonify({'recommendations': 'passs'}), 200)
+
 
 if __name__ == "__main__":
-	# setting debug to True enables hot reload
-	# and also provides a debugger shell
-	# if you hit an error while running the server
-	app.run(debug = True, host='0.0.0.0', port=5000)
+	"""
+	setting debug to True enables hot reload
+	and also provides a debugger shell
+	if you hit an error while running the server
+	"""
+	app.run(debug=True, host='0.0.0.0', port=5000)

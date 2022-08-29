@@ -1,7 +1,7 @@
 import os
 
 
-DATABASE={
+DATABASE = {
     "user": os.environ.get("user", "user"),
     "password": os.environ.get("password", "password"),
     "db": os.environ.get("db", "db"),
