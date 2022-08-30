@@ -1,0 +1,21 @@
+syntax = "proto3";
+package auth;
+
+message Auth {
+  string access_token = 1;
+}
+
+message UserToken {
+  string token = 2;
+  int64 user_id = 1;
+}
+
+message User {
+  int64 user_id = 2;
+}
+
+
+service AuthController {
+  rpc AddToken(UserToken) returns (User) {}
+  rpc CheckToken(Auth) returns (User) {}
+}

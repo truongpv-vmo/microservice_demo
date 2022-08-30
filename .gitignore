@@ -160,3 +160,6 @@ cython_debug/
 #.idea/
 
 .mysql-data
+
+database/
+dump.rdb

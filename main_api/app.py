@@ -10,8 +10,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 # imports for PyJWT authentication
 from datetime import datetime, timedelta
 from functools import wraps
-from settings import DATABASE
-
+from settings import DATABASE, TOKEN_LIFE_TIME
+from .auth.auth import valid_token, add_token
 
 app = Flask(__name__)
 # ---------------- configuration ----------------
@@ -38,7 +38,7 @@ class Token(db.Model):
 	exp = db.Column(
 			db.DateTime,
 			nullable=False,
-			default=datetime.utcnow() + timedelta(minutes=120)
+			default=datetime.utcnow() + timedelta(minutes=TOKEN_LIFE_TIME)
 		)
 
 
@@ -70,15 +70,18 @@ def token_required(f):
 	@wraps(f)
 	def decorated(*args, **kwargs):
 		token = None
+
 		# jwt is passed in the request header
 		if 'x-access-token' in request.headers:
 			token = request.headers['x-access-token']
+
 		# return 401 if token is not passed
 		if not token:
 			return jsonify({'message': 'Token is missing !!'}), 401
+		user_id = valid_token(token=token)
 
 		current_user = User.query.filter_by(
-				id=Token.query.filter_by(token=token).first().user_id
+				id=user_id
 			).first()
 		if not current_user:
 			return jsonify({
@@ -97,6 +100,7 @@ def login():
 	auth = request.form
 
 	if not auth or not auth.get('email') or not auth.get('password'):
+
 		# returns 401 if any email or / and password is missing
 		return make_response(
 			'Could not verify',
@@ -107,6 +111,7 @@ def login():
 	user = User.query.filter_by(email = auth.get('email')).first()
 
 	if not user:
+
 		# returns 401 if user does not exist
 		return make_response(
 			'Could not verify',
@@ -115,11 +120,12 @@ def login():
 		)
 
 	if check_password_hash(user.password, auth.get('password')):
+
 		# generates the JWT Token
 		token = generate_token(user.id, user.email)
-		db.session.add(Token(token=token, user_id=user.id))
-		db.session.commit()
+		add_token(token=token, user_id=user.id)
 		return make_response(jsonify({'token': token}), 201)
+
 	#password is wrong
 	return make_response( 
         jsonify({'message': 'password is wrong'}), 401)
@@ -140,6 +146,7 @@ def signup():
 		.filter_by(email = email)\
 		.first()
 	if not user:
+
 		# database ORM object
 		user = User(
 			public_id = str(uuid.uuid4()),
@@ -147,11 +154,13 @@ def signup():
 			email = email,
 			password = generate_password_hash(password)
 		)
+
 		# insert user
 		db.session.add(user)
 		db.session.commit()
 
 		return make_response('Successfully registered.', 201)
+
 	# returns 202 if user already exists
 	return make_response('User already exists. Please Log in.', 202)
 
