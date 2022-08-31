@@ -22,15 +22,30 @@ class PriceUnit(Model):
     currencyCode = CharField()
 
 
+class Categories(Model):
+    class Meta:
+        database = db
+
+    id = IntegerField(primary_key=True, unique=True, constraints=[SQL('AUTO_INCREMENT')])
+    name = CharField()
+
+
 class Products(Model):
     class Meta:
         database = db
 
-    id = IntegerField(primary_key=True)
+    id = AutoField(primary_key=True, unique=True, constraints=[SQL('AUTO_INCREMENT')])
     name = CharField()
     description = TextField()
     picture = TextField()
     total = IntegerField()
     unit = ForeignKeyField(PriceUnit)
-    categories = TextField()
 
+
+class ProductsCategories(Model):
+    class Meta:
+        database = db
+
+    id = AutoField(primary_key=True, unique=True, constraints=[SQL('AUTO_INCREMENT')])
+    product = ForeignKeyField(Products)
+    category = ForeignKeyField(Categories)

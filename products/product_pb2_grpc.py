@@ -19,12 +19,45 @@ class ProductControllerStub(object):
                 request_serializer=product__pb2.Param.SerializeToString,
                 response_deserializer=product__pb2.ProductsList.FromString,
                 )
+        self.GetProductDetail = channel.unary_unary(
+                '/products.ProductController/GetProductDetail',
+                request_serializer=product__pb2.ProductID.SerializeToString,
+                response_deserializer=product__pb2.ProductDetail.FromString,
+                )
+        self.AddProduct = channel.unary_unary(
+                '/products.ProductController/AddProduct',
+                request_serializer=product__pb2.Product.SerializeToString,
+                response_deserializer=product__pb2.ProductDetail.FromString,
+                )
+        self.AddCategory = channel.unary_unary(
+                '/products.ProductController/AddCategory',
+                request_serializer=product__pb2.CategoryString.SerializeToString,
+                response_deserializer=product__pb2.Category.FromString,
+                )
 
 
 class ProductControllerServicer(object):
     """Missing associated documentation comment in .proto file."""
 
     def GetProducts(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetProductDetail(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def AddProduct(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def AddCategory(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -37,6 +70,21 @@ def add_ProductControllerServicer_to_server(servicer, server):
                     servicer.GetProducts,
                     request_deserializer=product__pb2.Param.FromString,
                     response_serializer=product__pb2.ProductsList.SerializeToString,
+            ),
+            'GetProductDetail': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetProductDetail,
+                    request_deserializer=product__pb2.ProductID.FromString,
+                    response_serializer=product__pb2.ProductDetail.SerializeToString,
+            ),
+            'AddProduct': grpc.unary_unary_rpc_method_handler(
+                    servicer.AddProduct,
+                    request_deserializer=product__pb2.Product.FromString,
+                    response_serializer=product__pb2.ProductDetail.SerializeToString,
+            ),
+            'AddCategory': grpc.unary_unary_rpc_method_handler(
+                    servicer.AddCategory,
+                    request_deserializer=product__pb2.CategoryString.FromString,
+                    response_serializer=product__pb2.Category.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -62,5 +110,56 @@ class ProductController(object):
         return grpc.experimental.unary_unary(request, target, '/products.ProductController/GetProducts',
             product__pb2.Param.SerializeToString,
             product__pb2.ProductsList.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def GetProductDetail(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/products.ProductController/GetProductDetail',
+            product__pb2.ProductID.SerializeToString,
+            product__pb2.ProductDetail.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def AddProduct(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/products.ProductController/AddProduct',
+            product__pb2.Product.SerializeToString,
+            product__pb2.ProductDetail.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def AddCategory(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/products.ProductController/AddCategory',
+            product__pb2.CategoryString.SerializeToString,
+            product__pb2.Category.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

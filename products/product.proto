@@ -7,18 +7,50 @@ message Param {
   string description = 3;
 }
 
-message Product{
+message unit {
   int64 id = 1;
+  string currencyCode = 2;
+}
+
+message Category{
+  int64 id = 1;
+  string name = 2;
+}
+
+message CategoryString{
+  string name = 1;
+}
+
+message Product{
   string name = 2;
   string description = 3;
   string picture = 4;
   int64 total = 5;
   int64 unit_id = 6;
-  string categories = 7;
+  repeated int64 category_ids = 7;
 }
+
+message ProductID {
+  int64 id = 1;
+}
+
+message ProductDetail {
+  int64 id = 1;
+  string name = 2;
+  string description = 3;
+  string picture = 4;
+  int64 total = 5;
+  unit unit = 6;
+  repeated Category categories = 7;
+}
+
 message ProductsList {
-  repeated Product products = 8;
+  repeated ProductDetail products = 1;
 }
+
 service ProductController {
   rpc GetProducts(Param) returns (ProductsList) {}
+  rpc GetProductDetail(ProductID) returns (ProductDetail) {}
+  rpc AddProduct(Product) returns (ProductDetail) {}
+  rpc AddCategory(CategoryString) returns (Category) {}
 }
