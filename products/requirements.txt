@@ -1,0 +1,4 @@
+peewee
+mysqlclient==2.1.1
+grpcio-tools
+grpcio

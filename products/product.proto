@@ -1,0 +1,24 @@
+syntax = "proto3";
+package products;
+
+message Param {
+  string name = 1;
+  string categories = 2;
+  string description = 3;
+}
+
+message Product{
+  int64 id = 1;
+  string name = 2;
+  string description = 3;
+  string picture = 4;
+  int64 total = 5;
+  int64 unit_id = 6;
+  string categories = 7;
+}
+message ProductsList {
+  repeated Product products = 8;
+}
+service ProductController {
+  rpc GetProducts(Param) returns (ProductsList) {}
+}
